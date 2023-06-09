@@ -102,11 +102,23 @@ tProj *criaProjecao(int tipo, float left, float right, float top, float bottom, 
         for(j=0; j<4; j++)
             novaProjecao->projectionMatrix[i][j] = 0.0;
     }
-    novaProjecao->projectionMatrix[0][0] = 2.0 / 16.0;
-    novaProjecao->projectionMatrix[1][1] = 2.0 / 12.0;
-    novaProjecao->projectionMatrix[2][2] = -2.0 / -19.0;
-    novaProjecao->projectionMatrix[3][3] = 1.0;
-    novaProjecao->projectionMatrix[2][3] = 1.0;
+
+    // Se tipo == 0, projeção ortográfica
+    if(tipo == 0){
+
+        novaProjecao->projectionMatrix[0][0] = 2.0 / (right - left);
+        novaProjecao->projectionMatrix[1][1] = 2.0 / (top - bottom);
+        novaProjecao->projectionMatrix[2][2] = -2.0 / (far - near);
+        novaProjecao->projectionMatrix[3][3] = 1.0;
+        novaProjecao->projectionMatrix[2][3] = -(far + near) / (far - near);
+    }
+    // Se tipo == 1, projeção perspectiva
+    else if(tipo == 1){
+
+        /* Alguma coisa... */
+
+    }
+
     return novaProjecao;
 }
 
@@ -380,7 +392,7 @@ int main(int arc, char *argv[]){
     imprimeObjeto(objeto1);
 
     camera1 = criaCamera();
-    projecao1 = criaProjecao(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    projecao1 = criaProjecao(0, 16, 32, 24, 12, 38, 19);
 
     matrizComposta = (float **) malloc(4 * sizeof(float *));
     for(i=0; i<4; i++){
@@ -402,7 +414,7 @@ int main(int arc, char *argv[]){
     //MultMatriz4d(translacionaObj(0, 4, 0), objeto1->modelMatrix);
 
     //Translaciona câmera
-    MultMatriz4d(translacionaCam(0, 4, 0), camera1->viewMatrix);
+    //MultMatriz4d(translacionaCam(0, 4, 0), camera1->viewMatrix);
 
     /*---------------------------------------------*/
 
@@ -444,8 +456,8 @@ int main(int arc, char *argv[]){
 
         //printf("Rotacionando camera...\n");
         //MultMatriz4d(rotacionaCam(1, 1, 0, 0), camera1->viewMatrix);        // Rotaciona X
-        //MultMatriz4d(rotacionaCam(1, 0, 1, 0), camera1->viewMatrix);        // Rotaciona Y
-        //MultMatriz4d(rotacionaCam(1, 0, 0, 1), camera1->viewMatrix);        // Rotaciona Z
+        MultMatriz4d(rotacionaCam(1, 0, 1, 0), camera1->viewMatrix);        // Rotaciona Y
+        MultMatriz4d(rotacionaCam(1, 0, 0, 1), camera1->viewMatrix);        // Rotaciona Z
 
         //printf("Translacionando camera ate o infinito...\n");
         //MultMatriz4d(translacionaCam(0, 4, 0), camera1->viewMatrix);
