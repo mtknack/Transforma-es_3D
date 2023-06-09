@@ -115,11 +115,16 @@ tProj *criaProjecao(int tipo, float left, float right, float top, float bottom, 
     // Se tipo == 1, projeção perspectiva
     else if(tipo == 1){
 
-        /* Alguma coisa... */
-
+        novaProjecao->projectionMatrix[0][0] = (near / right);
+        novaProjecao->projectionMatrix[1][1] = (near / top);
+        novaProjecao->projectionMatrix[2][2] = -(far + near) / (far - near);
+        novaProjecao->projectionMatrix[2][3] = -(2 * far * near) / (far - near);
+        novaProjecao->projectionMatrix[3][2] = -1;
     }
 
     return novaProjecao;
+
+    //Referência: http://www.songho.ca/opengl/gl_projectionmatrix.html#perspective
 }
 
 tCamera *criaCamera(){
@@ -392,7 +397,7 @@ int main(int arc, char *argv[]){
     imprimeObjeto(objeto1);
 
     camera1 = criaCamera();
-    projecao1 = criaProjecao(0, 16, 32, 24, 12, 38, 19);
+    projecao1 = criaProjecao(1, 16, 32, 24, 12, 38, 19);
 
     matrizComposta = (float **) malloc(4 * sizeof(float *));
     for(i=0; i<4; i++){
@@ -408,13 +413,13 @@ int main(int arc, char *argv[]){
 
     // Escala objeto
     // Exemplo: escalaObj(0.5, 0.5, 0.5) reduz o tamanho do cubo pela metade, em todas as dimensões
-    MultMatriz4d(escalaObj(0.5, 0.5, 0.5), objeto1->modelMatrix);
+    MultMatriz4d(escalaObj(0.1, 0.1, 0.1), objeto1->modelMatrix);
 
     // Translaciona objeto
-    //MultMatriz4d(translacionaObj(0, 4, 0), objeto1->modelMatrix);
+    //MultMatriz4d(translacionaObj(0, 0, 6), objeto1->modelMatrix);
 
     //Translaciona câmera
-    //MultMatriz4d(translacionaCam(0, 4, 0), camera1->viewMatrix);
+    MultMatriz4d(translacionaCam(0, 0, 1), camera1->viewMatrix);
 
     /*---------------------------------------------*/
 
@@ -444,8 +449,8 @@ int main(int arc, char *argv[]){
 
         //printf("Rotacionando objeto...\n");
         //MultMatriz4d(rotacionaObj(1, 1, 0, 0), objeto1->modelMatrix);       // Rotaciona X
-        //MultMatriz4d(rotacionaObj(1, 0, 1, 0), objeto1->modelMatrix);       // Rotaciona Y
-        //MultMatriz4d(rotacionaObj(1, 0, 0, 1), objeto1->modelMatrix);       // Rotaciona Z
+        MultMatriz4d(rotacionaObj(1, 0, 1, 0), objeto1->modelMatrix);       // Rotaciona Y
+        MultMatriz4d(rotacionaObj(1, 0, 0, 1), objeto1->modelMatrix);       // Rotaciona Z
 
         //printf("Translacionando objeto até o infinito...\n");
         //MultMatriz4d(translacionaObj(0.2, 0.2, 0.2), objeto1->modelMatrix);
@@ -456,8 +461,8 @@ int main(int arc, char *argv[]){
 
         //printf("Rotacionando camera...\n");
         //MultMatriz4d(rotacionaCam(1, 1, 0, 0), camera1->viewMatrix);        // Rotaciona X
-        MultMatriz4d(rotacionaCam(1, 0, 1, 0), camera1->viewMatrix);        // Rotaciona Y
-        MultMatriz4d(rotacionaCam(1, 0, 0, 1), camera1->viewMatrix);        // Rotaciona Z
+        //MultMatriz4d(rotacionaCam(1, 0, 1, 0), camera1->viewMatrix);        // Rotaciona Y
+        //MultMatriz4d(rotacionaCam(1, 0, 0, 1), camera1->viewMatrix);        // Rotaciona Z
 
         //printf("Translacionando camera ate o infinito...\n");
         //MultMatriz4d(translacionaCam(0, 4, 0), camera1->viewMatrix);
