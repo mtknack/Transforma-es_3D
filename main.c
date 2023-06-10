@@ -1,3 +1,11 @@
+/*
+INTEGRANTES:
+- Arthur Santos Almeida
+- Daniel Goncalves Mantuan
+- Filipe Pádua Ribeiro
+- Matheus Knack da Silva
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -106,20 +114,45 @@ tProj *criaProjecao(int tipo, float left, float right, float top, float bottom, 
     // Se tipo == 0, projeção ortográfica
     if(tipo == 0){
 
+        // Forma completa (que por algum motivo não funciona)
+        /* 
+        novaProjecao->projectionMatrix[0][0] = 2.0 / (right - left);
+        novaProjecao->projectionMatrix[0][3] = -(right + left) / (right - left);
+        novaProjecao->projectionMatrix[1][1] = 2.0 / (top - bottom);
+        novaProjecao->projectionMatrix[1][3] = -(top + bottom) / (top - bottom);
+        novaProjecao->projectionMatrix[2][2] = -2.0 / (far - near);
+        novaProjecao->projectionMatrix[2][3] = -(far + near) / (far - near);
+        novaProjecao->projectionMatrix[3][3] = 1.0;
+        */
+
+        // Forma simplificada para um frustum simétrico
         novaProjecao->projectionMatrix[0][0] = 2.0 / (right - left);
         novaProjecao->projectionMatrix[1][1] = 2.0 / (top - bottom);
         novaProjecao->projectionMatrix[2][2] = -2.0 / (far - near);
-        novaProjecao->projectionMatrix[3][3] = 1.0;
         novaProjecao->projectionMatrix[2][3] = -(far + near) / (far - near);
+        novaProjecao->projectionMatrix[3][3] = 1.0;
     }
     // Se tipo == 1, projeção perspectiva
     else if(tipo == 1){
 
+        // Forma completa
+        novaProjecao->projectionMatrix[0][0] = (2.0 * near) / (right - left);
+        novaProjecao->projectionMatrix[0][2] = (right + left) / (right - left);
+        novaProjecao->projectionMatrix[1][1] = (2.0 * near) / (top - bottom);
+        novaProjecao->projectionMatrix[1][2] = (top + bottom) / (top - bottom);
+        novaProjecao->projectionMatrix[2][2] = -(far + near) / (far - near);
+        novaProjecao->projectionMatrix[2][3] = -(2.0 * far * near) / (far - near);
+        novaProjecao->projectionMatrix[3][2] = -1.0;
+
+        // Forma simplificada para um frustum simétrico
+        /*
         novaProjecao->projectionMatrix[0][0] = (near / right);
         novaProjecao->projectionMatrix[1][1] = (near / top);
         novaProjecao->projectionMatrix[2][2] = -(far + near) / (far - near);
         novaProjecao->projectionMatrix[2][3] = -(2 * far * near) / (far - near);
         novaProjecao->projectionMatrix[3][2] = -1;
+        */
+        
     }
 
     return novaProjecao;
@@ -191,6 +224,11 @@ tObjeto3d *carregaObjeto(char *nomeArquivo){
 
     novoObjeto->pontos = (float **) malloc(novoObjeto->nPontos * sizeof(float*));
 
+    /*
+        Nesse for loop abaixo foi necessário mudar o número de elementos no vetor novoObjeto->pontos para "4",
+        ao invés de 3. E setar o último elemento para "1". Caso contrário, as coordenadas homogêneas não
+        surtem efeito e as funções de translação não funcionam. Achamos que é por isso, ao menos.
+    */
     for(i=0; i<novoObjeto->nPontos; i++){
         novoObjeto->pontos[i]=(float *) malloc(4 * sizeof(float));
         fscanf(arquivoObj, "%f%f%f", &(novoObjeto->pontos[i][0]), &(novoObjeto->pontos[i][1]), &(novoObjeto->pontos[i][2]));
@@ -365,8 +403,6 @@ float **translacionaCam(float x, float y, float z){
     return matrizTranslaciona;
 
 }
-
-
 /*-----------------------------------------------*/
 
 int main(int arc, char *argv[]){
@@ -374,7 +410,6 @@ int main(int arc, char *argv[]){
     SDL_Event windowEvent;
     SDL_Renderer *renderer;
     tObjeto3d *objeto1;
-    tObjeto3d *objeto2;
     tCamera *camera1;
     tProj *projecao1;
     float **matrizComposta;
@@ -396,13 +431,18 @@ int main(int arc, char *argv[]){
     objeto1 = carregaObjeto("cubo.dcg");
     imprimeObjeto(objeto1);
 
-    camera1 = criaCamera();
-    projecao1 = criaProjecao(1, 16, 32, 24, 12, 38, 19);
-
     matrizComposta = (float **) malloc(4 * sizeof(float *));
     for(i=0; i<4; i++){
         matrizComposta[i] = (float *) malloc(4 * sizeof(float));
     }
+
+    /*------------- Criando projeção -------------*/
+    camera1 = criaCamera();
+
+    // Projeção Ortográfica == 0
+    // Projeção Perspectiva == 1
+    projecao1 = criaProjecao(0, -5, 5, 5, -5, -10, 10);
+    /*--------------------------------------------*/
 
     /*------------- Pré-Processamento -------------*/
 
@@ -413,13 +453,13 @@ int main(int arc, char *argv[]){
 
     // Escala objeto
     // Exemplo: escalaObj(0.5, 0.5, 0.5) reduz o tamanho do cubo pela metade, em todas as dimensões
-    MultMatriz4d(escalaObj(0.1, 0.1, 0.1), objeto1->modelMatrix);
+    MultMatriz4d(escalaObj(0.5, 0.5, 0.5), objeto1->modelMatrix);
 
     // Translaciona objeto
-    //MultMatriz4d(translacionaObj(0, 0, 6), objeto1->modelMatrix);
+    //MultMatriz4d(translacionaObj(0, 3, 0), objeto1->modelMatrix);
 
     //Translaciona câmera
-    MultMatriz4d(translacionaCam(0, 0, 1), camera1->viewMatrix);
+    //MultMatriz4d(translacionaCam(3, 0, 0), camera1->viewMatrix);
 
     /*---------------------------------------------*/
 
@@ -443,21 +483,13 @@ int main(int arc, char *argv[]){
         // TODO rendering code goes here
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
-        printf("Cria identidade...\n");
-        criaIdentidade4d(matrizComposta);
-        imprimeMatriz(matrizComposta);
-
         //printf("Rotacionando objeto...\n");
         //MultMatriz4d(rotacionaObj(1, 1, 0, 0), objeto1->modelMatrix);       // Rotaciona X
-        MultMatriz4d(rotacionaObj(1, 0, 1, 0), objeto1->modelMatrix);       // Rotaciona Y
-        MultMatriz4d(rotacionaObj(1, 0, 0, 1), objeto1->modelMatrix);       // Rotaciona Z
+        //MultMatriz4d(rotacionaObj(1, 0, 1, 0), objeto1->modelMatrix);       // Rotaciona Y
+        //MultMatriz4d(rotacionaObj(1, 0, 0, 1), objeto1->modelMatrix);       // Rotaciona Z
 
-        //printf("Translacionando objeto até o infinito...\n");
-        //MultMatriz4d(translacionaObj(0.2, 0.2, 0.2), objeto1->modelMatrix);
-
-        printf("Multiplicando matrizes Model X Id...\n");
-        MultMatriz4d(objeto1->modelMatrix , matrizComposta);
-        imprimeMatriz(matrizComposta);
+        //printf("Translacionando objeto ate o infinito...\n");
+        //MultMatriz4d(translacionaObj(0.02, 0.02, 0), objeto1->modelMatrix);
 
         //printf("Rotacionando camera...\n");
         //MultMatriz4d(rotacionaCam(1, 1, 0, 0), camera1->viewMatrix);        // Rotaciona X
@@ -465,7 +497,15 @@ int main(int arc, char *argv[]){
         //MultMatriz4d(rotacionaCam(1, 0, 0, 1), camera1->viewMatrix);        // Rotaciona Z
 
         //printf("Translacionando camera ate o infinito...\n");
-        //MultMatriz4d(translacionaCam(0, 4, 0), camera1->viewMatrix);
+        //MultMatriz4d(translacionaCam(0, 0.2, 0), camera1->viewMatrix);
+
+        printf("Cria identidade...\n");
+        criaIdentidade4d(matrizComposta);
+        imprimeMatriz(matrizComposta);
+
+        printf("Multiplicando matrizes Model X Id...\n");
+        MultMatriz4d(objeto1->modelMatrix , matrizComposta);
+        imprimeMatriz(matrizComposta);
 
         printf("Multiplicando matrizes View X Model...\n");
         MultMatriz4d(camera1->viewMatrix , matrizComposta);
